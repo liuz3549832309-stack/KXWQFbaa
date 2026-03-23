@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>轻语本 · 英汉短语随心记</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+        }
+
+        body {
+            background-color: #e9f2fa;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1.5rem;
+            padding-top: 60px; /* 为顶部状态栏留出空间 */
+        }
+
+        /* 顶部状态栏 */
+        .top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 45px;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            display: none; /* 登录后显示 */
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            z-index: 1000;
+            border-bottom: 1px solid rgba(175, 205, 235, 0.3);
+        }
+
+        .top-bar-info {
+            font-size: 0.85rem;
+            color: #1a3b5c;
+        }
+
+        .top-bar-info b {
+            background: #d9e9ff;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-left: 5px;
+        }
+
+        .logout-link {
+            font-size: 0.8rem;
+            color: #b13e3e;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .app-card {
+            max-width: 1000px;
+            width: 100%;
+            background-color: white;
+            border-radius: 32px;
+            box-shadow: 0 20px 40px -10px rgba(85, 120, 160, 0.25), 0 8px 20px rgba(0, 40, 70, 0.1);
+            padding: 2.5rem 2.2rem;
+            border: 1px solid rgba(175, 205, 235, 0.5);
+            transition: all 0.2s ease;
+            margin-top: 20px;
+        }
+
+        /* 登录遮罩层 */
+        #authOverlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(233, 242, 250, 0.9);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .login-card {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 32px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.05);
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .login-card h3 { margin-bottom: 1.5rem; color: #1a3b5c; }
+
+        .login-input {
+            width: 100%;
+            padding: 1rem;
+            border-radius: 20px;
+            border: 2px solid #e0ebf5;
+            margin-bottom: 1.5rem;
+            outline: none;
+            font-size: 1rem;
+            text-align: center;
+        }
+
+        .login-btn {
+            background: #1e4f7c;
+            color: white;
+            border: none;
+            padding: 0.9rem 2.5rem;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        /* 标题 & 指导语 */
+        .header-section { margin-bottom: 2rem; }
+        .title {
+            font-size: 1.9rem;
+            font-weight: 550;
+            color: #1a3b5c;
+            margin-bottom: 0.35rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .title span {
+            background: #d9e9ff;
+            padding: 0.15rem 0.7rem;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            font-weight: 450;
+            color: #1e4b74;
+            margin-left: 0.5rem;
+        }
+
+        .instruction {
+            background: #f0f7ff;
+            padding: 1.1rem 1.5rem;
+            border-radius: 24px;
+            border-left: 5px solid #5f9eff;
+            color: #153e60;
+            font-size: 1.05rem;
+            line-height: 1.6;
+            margin-top: 0.8rem;
+        }
+        .instruction .step-icon {
+            background-color: #b7d6ff;
+            color: #103957;
+            border-radius: 50%;
+            width: 28px; height: 28px;
+            display: inline-flex; align-items: center; justify-content: center;
+            font-weight: 600;
+        }
+
+        /* 录入卡片 */
+        .input-area {
+            background: #f3f9ff;
+            border-radius: 28px;
+            padding: 1.8rem 2rem;
+            margin: 2rem 0 2.2rem 0;
+            border: 1px solid #cbe0fa;
+        }
+        .input-row { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; }
+        .input-group { flex: 1 1 240px; }
+        .input-group label { display: block; font-size: 0.85rem; font-weight: 600; color: #1d4f7a; margin-bottom: 0.4rem; }
+        .input-field {
+            width: 100%; background: white; border: 2px solid #c6dfff;
+            border-radius: 24px; padding: 0.9rem 1.4rem; font-size: 1rem;
+            color: #10304f; outline: none; transition: 0.15s;
+        }
+        .input-field:focus { border-color: #3f8cff; box-shadow: 0 0 0 4px rgba(70, 140, 255, 0.15); }
+
+        .upload-button {
+            background: #1e4f7c; border: none; color: white !important;
+            font-weight: 500; padding: 0.9rem 2.4rem; border-radius: 40px;
+            font-size: 1.1rem; cursor: pointer; transition: 0.15s;
+            margin-top: 1.4rem;
+        }
+
+        .message-bar { min-height: 2.8rem; margin: 0.5rem 0 0.8rem 0; font-size: 0.95rem; color: #1e5580; display: flex; align-items: center; gap: 8px; }
+
+        /* 列表区域 */
+        .view-section { background: #f0f7fe; border-radius: 28px; padding: 1.6rem 2rem 2rem 2rem; border: 1px solid #d1e5fd; }
+        .view-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+        .view-header h2 { font-size: 1.5rem; font-weight: 520; color: #103f64; display: flex; align-items: center; gap: 0.8rem; }
+        .view-header h2 .badge { background: #bedaff; color: #0d3451; font-size: 0.95rem; padding: 0.2rem 0.9rem; border-radius: 30px; }
+        
+        .action-buttons { display: flex; gap: 1rem; }
+        .icon-btn {
+            background: transparent; border: 1.5px solid #9ac2f0; color: #144d78;
+            padding: 0.5rem 1.2rem; border-radius: 30px; font-size: 0.95rem; cursor: pointer;
+            display: flex; align-items: center; gap: 0.3rem; transition: 0.2s;
+        }
+        .icon-btn:hover { background: #d6e9ff; border-color: #6896cf; }
+
+        .phrase-list {
+            background: white; border-radius: 24px; border: 2px solid #c3dcfe;
+            height: 280px; overflow-y: auto; padding: 0.2rem;
+            scrollbar-width: thin; scrollbar-color: #aac6ec #e3f0ff;
+        }
+        .list-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 1.2rem 1.8rem; border-bottom: 1px solid #cfe0f5; color: #113753;
+            font-size: 1.05rem; cursor: pointer; transition: 0.2s;
+        }
+        .list-item:hover { background: #d4e8ff; transform: translateX(4px); }
+        .list-item.selected { background: #c1e0ff; border-left: 4px solid #1e4f7c; }
+
+        .item-en { font-weight: 530; flex: 1 1 40%; word-break: break-all; }
+        .item-zh { flex: 1 1 40%; padding-left: 1rem; word-break: break-all; }
+
+        .item-actions { display: flex; gap: 12px; opacity: 0; transition: 0.15s; }
+        .list-item:hover .item-actions { opacity: 1; }
+
+        .action-btn { background: transparent; border: none; font-size: 1.2rem; cursor: pointer; }
+        .delete-btn { color: #b13e3e; }
+        
+        .empty-message { color: #7f9fc7; text-align: center; padding: 3rem 1rem; font-style: italic; }
+        .footer-note { margin-top: 1.5rem; text-align: right; font-size: 0.9rem; color: #779dc4; }
+        
+        p, h1, h2, h3, label, div, li, span, input, button { color: #123f63; }
+    </style>
+</head>
+<body>
+
+<!-- 页面顶部栏 -->
+<div class="top-bar" id="topBar">
+    <div class="top-bar-info">☁️ 云端词库已连接 | 当前 ID: <b id="currentUserDisp">---</b></div>
+    <span class="logout-link" id="logoutBtn">退出登录</span>
+</div>
+
+<!-- 登录遮罩 -->
+<div id="authOverlay">
+    <div class="login-card">
+        <h3>轻语本-登录</h3>
+        <p style="font-size: 0.9rem; color: #6a8aad; margin-bottom: 1.5rem;">输入您的ID账号，开启云端同步</p>
+        <input type="password" id="userSecretKey" class="login-input" placeholder="输入ID账号 (如: 123abc)">
+        <button class="login-btn" id="loginBtn">进入我的词库</button>
+    </div>
+</div>
+
+<div class="app-card">
+    <div class="header-section">
+        <div class="title">轻短语·随心记 <span>英 ⇄ 中</span></div>
+        <div class="instruction">
+            <p>
+                <span class="step-icon">1</span> 输入英文和翻译 
+                <span style="margin: 0 6px; color:#88aed0;">➡️</span>
+                <span class="step-icon">2</span> 点击 <span style="font-weight:600;">【上传录入】</span>
+                <span style="margin: 0 6px; color:#88aed0;">➡️</span>
+                <span class="step-icon">3</span> 数据实时同步至云端
+            </p>
+        </div>
+    </div>
+
+    <div class="input-area">
+        <div class="input-row">
+            <div class="input-group">
+                <label>英文短语</label>
+                <input type="text" class="input-field" id="enInput" placeholder="New phrase..." autocomplete="off">
+            </div>
+            <div class="input-group">
+                <label>中文翻译</label>
+                <input type="text" class="input-field" id="zhInput" placeholder="翻译内容..." autocomplete="off">
+            </div>
+        </div>
+        <div style="display: flex; justify-content: flex-end;">
+            <button class="upload-button" id="uploadBtn">↑ 上传录入</button>
+        </div>
+        <div class="message-bar" id="messageBox">等待您的输入…</div>
+    </div>
+
+    <div class="view-section">
+        <div class="view-header">
+            <h2>已录短语集 <span class="badge" id="countDisplay">0 条</span></h2>
+            <div class="action-buttons">
+                <!-- 原刷新按钮改为保存按钮 -->
+                <button class="icon-btn" id="saveBtn" title="手动同步至云端">保存</button>
+                <button class="icon-btn" id="clearViewHintBtn">隐藏/显示</button>
+            </div>
+        </div>
+        <div class="phrase-list" id="phraseListContainer">
+            <div class="empty-message">✨ 暂无短语，请录入一条吧</div>
+        </div>
+        <div style="margin-top: 1rem; font-size:0.9rem; color:#5882b7;">👆 列表区域可上下滑动</div>
+    </div>
+    <div class="footer-note">—— 淡蓝手札 · 云端存储已开启 ——</div>
+</div>
+
+<script>
+(function() {
+    const CLOUD_BASE = 'https://kvdb.io/5YkZ8W8zZ9Yp2F8m2jU3P6/'; 
+    let phrases = [];
+    let currentKey = localStorage.getItem('phrase_token');
+
+    const authOverlay = document.getElementById('authOverlay');
+    const topBar = document.getElementById('topBar');
+    const userSecretKey = document.getElementById('userSecretKey');
+    const loginBtn = document.getElementById('loginBtn');
+    const currentUserDisp = document.getElementById('currentUserDisp');
+    const logoutBtn = document.getElementById('logoutBtn');
+    
+    const enInput = document.getElementById('enInput');
+    const zhInput = document.getElementById('zhInput');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const saveBtn = document.getElementById('saveBtn'); // 新增保存按钮
+    const messageBox = document.getElementById('messageBox');
+    const phraseListContainer = document.getElementById('phraseListContainer');
+    const countDisplay = document.getElementById('countDisplay');
+
+    // 1. 初始化鉴权
+    function init() {
+        if (currentKey) {
+            authOverlay.style.display = 'none';
+            topBar.style.display = 'flex';
+            currentUserDisp.innerText = currentKey;
+            fetchFromCloud();
+        } else {
+            authOverlay.style.display = 'flex';
+            topBar.style.display = 'none';
+        }
+    }
+
+    // 2. 登录/退出逻辑
+    loginBtn.addEventListener('click', () => {
+        const key = userSecretKey.value.trim();
+        if (key.length < 3) return alert('ID账号太短了');
+        currentKey = key;
+        localStorage.setItem('phrase_token', key);
+        init();
+    });
+
+    logoutBtn.addEventListener('click', () => {
+        if (confirm('确定退出登录吗？数据仍保存在云端。')) {
+            localStorage.removeItem('phrase_token');
+            location.reload();
+        }
+    });
+
+    // 3. 云端核心逻辑
+    async function fetchFromCloud() {
+        setMessage('正在同步云端数据...');
+        try {
+            const res = await fetch(CLOUD_BASE + currentKey);
+            if (res.ok) {
+                const data = await res.json();
+                phrases = Array.isArray(data) ? data : [];
+            } else {
+                phrases = [];
+            }
+            renderList();
+            setMessage(phrases.length > 0 ? '✅ 同步成功' : '✨ 欢迎开始录入');
+        } catch (e) {
+            setMessage('❌ 云端连接失败，请检查网络');
+        }
+    }
+
+    async function savePhrases(newData, isManual = false) {
+        if (!currentKey) return;
+        try {
+            const res = await fetch(CLOUD_BASE + currentKey, {
+                method: 'POST',
+                body: JSON.stringify(newData),
+                headers: { 'Content-Type': 'application/json' }
+            });
+            if(res.ok) {
+                setMessage(isManual ? '✅ 已手动保存至云端' : '● 已实时同步');
+            }
+        } catch (e) {
+            setMessage('❌ 保存失败，请检查网络');
+        }
+    }
+
+    function setMessage(text) {
+        messageBox.innerHTML = ` ${text}`;
+    }
+
+    // 4. 渲染与操作
+    function renderList() {
+        phraseListContainer.innerHTML = '';
+        if (!phrases || phrases.length === 0) {
+            phraseListContainer.innerHTML = '<div class="empty-message">✨ 暂无短语，请录入一条吧</div>';
+            countDisplay.innerText = '0 条';
+            return;
+        }
+
+        phrases.forEach((item, index) => {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'list-item';
+            
+            itemDiv.innerHTML = `
+                <div style="display:flex; flex:1; justify-content:space-between; align-items:center;">
+                    <span class="item-en">${item.en}</span>
+                    <span class="item-zh">${item.zh}</span>
+                </div>
+                <div class="item-actions">
+                    <button class="action-btn" onclick="event.stopPropagation(); window.pinPhrase(${index})">📌</button>
+                    <button class="action-btn delete-btn" onclick="event.stopPropagation(); window.deletePhrase(${index})">🗑️</button>
+                </div>
+            `;
+
+            itemDiv.onclick = () => {
+                document.querySelectorAll('.list-item').forEach(el => el.classList.remove('selected'));
+                itemDiv.classList.add('selected');
+                setMessage(`当前选中: ${item.en}`);
+            };
+
+            itemDiv.ondblclick = () => {
+                navigator.clipboard.writeText(`${item.en} ${item.zh}`);
+                setMessage(`已复制: ${item.en}`);
+            };
+
+            phraseListContainer.appendChild(itemDiv);
+        });
+        countDisplay.innerText = phrases.length + ' 条';
+    }
+
+    // 挂载全局方法供 onclick 使用
+    window.pinPhrase = (index) => {
+        const item = phrases.splice(index, 1)[0];
+        phrases.unshift(item);
+        renderList();
+        savePhrases(phrases);
+        setMessage(`📌 已置顶: "${item.en}"`);
+    };
+
+    window.deletePhrase = (index) => {
+        const item = phrases.splice(index, 1)[0];
+        renderList();
+        savePhrases(phrases);
+        setMessage(`🗑️ 已删除: "${item.en}"`);
+    };
+
+    // 5. 交互事件
+    uploadBtn.addEventListener('click', function() {
+        const en = enInput.value.trim();
+        const zh = zhInput.value.trim();
+        if (!en || !zh) {
+            setMessage('❌ 英文和中文都不能为空');
+            return;
+        }
+        phrases.unshift({ en, zh });
+        enInput.value = '';
+        zhInput.value = '';
+        renderList();
+        savePhrases(phrases);
+        setMessage(`✅ 已录入并同步 “${en}”`);
+    });
+
+    // 手动保存按钮逻辑
+    saveBtn.addEventListener('click', () => {
+        savePhrases(phrases, true);
+    });
+
+    document.getElementById('clearViewHintBtn').onclick = () => {
+        const isHidden = phraseListContainer.style.opacity === '0';
+        phraseListContainer.style.opacity = isHidden ? '1' : '0';
+        setMessage(isHidden ? '列表已显示' : '列表已隐藏');
+    };
+
+    [enInput, zhInput].forEach(input => {
+        input.onkeydown = (e) => { if (e.key === 'Enter') uploadBtn.click(); };
+    });
+
+    init();
+})();
+</script>
+</body>
+</html>
